@@ -1,0 +1,28 @@
+
+
+Need to prepare mssql database
+As sa run below
+
+create database testpyforex
+create login pytrader with password = '<password>';
+
+
+create database pyforex
+USE pyforex;
+create user pytrader for login pytrader with default_database = pyforex;
+ALTER ROLE db_owner ADD MEMBER pytrader;
+
+USE testpyforex;
+ALTER ROLE dbowner ADD MEMBER pytrader;
+create user pytrader for login pytrader with default_database = testpyforex;
+ALTER ROLE db_owner ADD MEMBER pytrader;
+
+
+
+# Need visual c++ 14
+
+pip3 install cython pyodbc pytz pyyaml requests ujson jupyter matplotlib mpl_finance
+pip3 install oandapyV20 
+
+
+

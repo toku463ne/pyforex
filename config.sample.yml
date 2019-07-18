@@ -1,0 +1,18 @@
+---
+mssqldb:
+  server: desktop-ko69t37\sqlexpress
+  driver: SQL Server Native Client 11.0
+  database: pyforex
+  testdatabase: testpyforex
+  qadatabase: qapyforex
+  username: pytrader
+  password: traderP@ssw0rd
+oanda:
+  environment: practice
+  accountid: xxx
+  token: xxx
+datagetter_type: mssqloanda
+loglevel: 1
+run_mode: 1
+
+  
