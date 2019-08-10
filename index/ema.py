@@ -5,7 +5,7 @@ Created on 2019/04/14
 '''
 from index import TechnicalIndex
 from tools.subchart import SubChart
-
+from plotelement.linechart import PlotEleLineChart
 
 class EmaIndex(TechnicalIndex):
     
@@ -41,18 +41,16 @@ class EmaIndex(TechnicalIndex):
         epoch = tickEvent.time
         i, epoch = self.subc.getTime(epoch)
         if epoch == self.now:
-            return i, epoch, self.ema[i]
+            return i, epoch, self.ema[i-self.ema_span]
         
         if i < 0:
             self.updateEma()
         
         self.now = epoch
     
-        mprice = (tickEvent.bid + tickEvent.ask)/2
-        
         i = i - self.ema_span
         if i >= 0:
-            return i, epoch, self.ema[i] 
+            return i, epoch, self.ema[i-self.ema_span] 
         else:
             return i, epoch, -1
         
@@ -62,4 +60,5 @@ class EmaIndex(TechnicalIndex):
         (t1, _, _, _, cl1, _) = self.subc.getLatestChart(self.epochs[-1])
         self._calcEma(t1, cl1, self.ema[-1])
     
-        
+    def getPlotElement(self, color="k"):
+        return PlotEleLineChart(self.epochs, self.ema)

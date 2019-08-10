@@ -7,6 +7,7 @@ import lib
 import lib.tradelib as tradelib
 from collections import OrderedDict
 import lib.getter as getterlib
+import env
 EP = 0
 O = 1
 H = 2
@@ -16,20 +17,25 @@ V = 5
 
 
 class SubChart(object):
-    def __init__(self, instrument, granularity, 
-                 startep, endep=0, nbars=0, cachesize=1000):
+    def __init__(self, name, instrument, granularity, 
+                 startep=-1, endep=-1, 
+                 nbars=0, maxsize=12*24*3):
+        self.name = name
         self.instrument = instrument
         self.granularity = granularity
         self.unitsecs = tradelib.getUnitSecs(granularity)
-        self.cachesize = cachesize
-        #self.maxsize = maxsize
-        self.curr_time = 0
-        self.epochsidx = OrderedDict()
-        self.epochcache = OrderedDict()
+        self.epochsidx = None
+        self.nowidx = -1
+        self.now = -1
+        self.maxsize = maxsize
+        self.size_to_cleanup = int(maxsize*1.5)
         
-        if endep > 0:
-            (t,o,h,l,c,v) = getterlib.getPrices(instrument, 
-                                                  granularity, startep, endep)
+        if startep == -1:
+            startep = lib.nowepoch()
+        if endep == -1:
+            endep = lib.nowepoch()
+        (t,o,h,l,c,v) = getterlib.getPrices(instrument, 
+                                            granularity, startep, endep+1)
         if nbars > 0:
             (t1,o1,h1,l1,c1,v1) = getterlib.getNPrices(instrument, 
                                                        granularity, startep-1, nbars)
@@ -42,30 +48,94 @@ class SubChart(object):
             (t,o,h,l,c,v) = (t1,o1,h1,l1,c1,v1)
         self.prices = (t,o,h,l,c,v)
         self._initCaches()
-        self.startep = startep
-        self.endep = endep
-        self.now = startep
-    
-    
+        self.startep = t[0]
+        self.endep = t[-1]
+        
+        
     
     def _initCaches(self):
         self.epochsidx = OrderedDict()
-        self.epochcache = OrderedDict()
         t = self.prices[EP]
         for i in range(len(t)):
             self.epochsidx[t[i]] = i
-    
-    
-    
-    
-    def getLatestChart(self, curr_last_epoch, end_epoch=-1):
-        if end_epoch == -1:
-            ep = min(lib.nowepoch(), self.endep)
-        else:
-            ep = min(lib.nowepoch(), self.endep, end_epoch)
-        (t1,o1,h1,l1,c1,v1) = getterlib.getPrices(self.instrument, 
-                            self.granularity, curr_last_epoch+1, ep)
-        if len(t1) > 0:
+        
+    # returns number of shift
+    def truncateOldFrom(self):
+        try:
+            if env.run_mode in [env.MODE_BACKTESTING, env.MODE_UNITTEST]:
+                return
+            (t,o,h,l,c,v) = self.prices
+            if self.nowidx+1 <= self.size_to_cleanup:
+                return
+            #starti = len(t[:self.nowidx+1]) - self.maxsize
+            starti = self.nowidx+1-self.maxsize
+            lib.printInfo(self.now, "%s subchart | truncating old chart" % self.name)
+            t = t[starti:]
+            o = o[starti:]
+            h = h[starti:]
+            l = l[starti:]
+            c = c[starti:]
+            v = v[starti:]
+            self.prices = (t,o,h,l,c,v)
+            self._initCaches()
+            self.nowidx -= starti
+            self.now = t[self.nowidx]
+            return starti
+        except IndexError:
+            lib.printError(self.now, "%s | self.now=%d self.nowidx=%d len(t)=%d starti=%d" % \
+                           (self.name, self.now, self.nowidx, len(t), starti)
+                           )
+
+    def onTick(self, tickEvent):
+        epoch = tickEvent.time
+        (i, epoch) = self.getTime(epoch)
+        if i < 0:
+            return (-1, -1)
+        #nshift = 0
+        if epoch != self.now:
+            self.now = epoch
+            self.nowidx = i
+            self.truncateOldFrom()
+            
+        return (self.nowidx, self.now)
+        
+            
+    def getPrices(self, starti=0, endi=-1):
+        if starti == -1:
+            starti = 0
+        (t,o,h,l,c,v) = self.prices
+        if env.run_mode == env.MODE_SIMULATE:
+            if endi == -1 and self.nowidx >= 0:
+                endi = self.nowidx
+        if endi == -1:
+            endi = len(t)-1
+        return (t[starti:endi+1],
+                o[starti:endi+1],
+                h[starti:endi+1],
+                l[starti:endi+1],
+                c[starti:endi+1],
+                v[starti:endi+1])
+            
+            
+    def getTime(self, epoch=-1):
+        errret = (-1, -1)
+        self.cache_used = False
+        if epoch == -1:
+            epoch = lib.nowepoch()
+            
+        epoch = epoch - (epoch % self.unitsecs)
+        if epoch == self.now:
+            return self.epochsidx[epoch], epoch
+        
+        (t,o,h,l,c,v) = self.prices
+        if epoch > t[-1]:
+            (t1,o1,h1,l1,c1,v1) = getterlib.getPrices(self.instrument, 
+                            self.granularity, t[-1]+self.unitsecs, epoch)
+            if len(t1) == 0:
+                return (t[-1], len(t)-1)
+            shiftt = len(t)
+            for i in range(len(t1)):
+                self.epochsidx[t1[i]] = i+shiftt
             (t,o,h,l,c,v) = self.prices
             t.extend(t1)
             o.extend(o1)
@@ -73,70 +143,10 @@ class SubChart(object):
             l.extend(l1)
             c.extend(c1)
             v.extend(v1)
-        return (t1,o1,h1,l1,c1,v1)
-    
-    
-    # returns number of shift
-    def truncateOldFrom(self, starti):
-        #epochi, _ = self.getTime(base_epoch)
-        if starti <= 0:
-            return 0
-        (t,o,h,l,c,v) = self.prices
-        t = t[starti:]
-        o = o[starti:]
-        h = h[starti:]
-        l = l[starti:]
-        c = c[starti:]
-        v = v[starti:]
-        self.prices = (t,o,h,l,c,v)
-        self._initCaches()
-        return starti
+           
+        if epoch not in self.epochsidx.keys():
+            return errret
         
-            
-    def getPrices(self, start_i=-1, end_i=-1):
-        (t,_,_,_,_,_) = self.prices
-        if len(t)-1 <= end_i:
-            end_i = len(t)-1
-        if start_i == -1 and end_i == -1:
-            return self.prices
-        elif start_i == -1 and end_i > 0:
-            return self.prices[:end_i]
-        elif start_i > 0 and end_i == -1:
-            return self.prices[start_i:]
-        else:
-            return self.prices[start_i:end_i+1]
-    
-    
-    def getAt(self, idx):
-        (t,o,h,l,c,v) = self.prices
-        return (t[idx],o[idx],h[idx],
-                l[idx],c[idx],v[idx])
-            
-            
-    def getTime(self, epoch):
-        epoch = epoch - (epoch % self.unitsecs)
-        last_epoch = self.prices[EP][-1]
-        if epoch > last_epoch:
-            (t,_,_,_,_,_) = self.getLatestChart(last_epoch)
-            if t[-1] + self.unitsecs < epoch:
-                return -1,-1
-            epoch = t[-1]
-            
-        epoch1 = epoch
-        if epoch in self.epochsidx.keys():
-            pass
-        elif epoch1 in self.epochcache.keys():
-            epoch = self.epochcache[epoch1]
-        else:
-            while epoch not in self.epochsidx.keys():
-                epoch -= self.unitsecs
-                if epoch < self.startep:
-                    return (-1, -1)
-            self.epochcache[epoch1] = epoch
-            if len(self.epochcache) > self.cachesize:
-                self.epochcache.popitem(last=False)
         return self.epochsidx[epoch], epoch
     
-    def getTimeFromIdx(self, idx):
-        return self.prices[EP][idx]
     

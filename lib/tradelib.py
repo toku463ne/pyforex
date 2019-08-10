@@ -25,6 +25,10 @@ def getUnitSecs(period):
     if unit_secs == 0: raise Exception("Not proper period type.")
     return unit_secs
 
+def getSpread(instrument):
+    if instrument == "USD_JPY":
+        return 0.4
+
 def getDecimalPlace(instrument):
     if instrument == "USD_JPY":
         return 2
@@ -44,28 +48,6 @@ def getNearEpoch(period, ep):
     return math.floor(ep - ep % u)
     
 
-def runDefaultBacktest(instrument, startep, endep, strategy):
-    from ticker.backtest import BackTestTicker
-    from executor.backtester import BacktestExecutor
-    from trading import Trading
-    #startep = lib.str2epoch(startstr, env.DATE_FORMAT_NORMAL)
-    #endep = lib.str2epoch(endstr, env.DATE_FORMAT_NORMAL)
-    ticker = BackTestTicker(instrument, "M5", 
-                            startep, endep, spread=0.4)
-    executor = BacktestExecutor()
-    trading = Trading()
-    portfolio, plotelements = trading.run(ticker, executor, strategy)
-    return portfolio, plotelements
-
-def runDefaultCandleTrading(instrument, strategy):
-    from ticker.latestcandle import LastCandleTicker
-    from executor.oanda import OandaExecutor
-    from trading import Trading
-    ticker = LastCandleTicker(instrument)
-    executor = OandaExecutor()
-    trading = Trading()
-    portfolio, plotelements = trading.run(ticker, executor, strategy)
-    return portfolio, plotelements 
 
 def getDensity(hl, ll, cl):
     if len(ll) != len(hl) or len(ll) != len(cl):
@@ -84,9 +66,10 @@ def getDensity(hl, ll, cl):
         return 1,vm,hls
     else:
         if (cl[-1]-vm)/vns > 1:
-            return 0, -1,-1
+            return -1, -1,-1
         hl_vn_rate = hls/vns
-        return hl_vn_rate,vm,hls
+        dens = 1- abs(1-hl_vn_rate)
+        return dens,vm,hls
 
 def getNearestRoundN(price, instrument="USD_JPY"):
     if instrument == "USD_JPY" or \

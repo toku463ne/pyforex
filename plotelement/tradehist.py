@@ -64,42 +64,5 @@ class PlotEleTradeHist(PlotElement):
                                           lib.epoch2str(epochs[edi], "%m-%d\n%H:%M")), 
                             (edi, ev.end_price), size=30, color=color,
                             horizontalalignment="right",verticalalignment="bottom")
-            '''
-            start_price = 0
-            end_price = 0
-            start_time = 0
-            end_time = 0
-            if sti > 0:
-                start_price = ev.start_price
-                start_time = ev.start_time
-                ax.scatter(sti, start_price, c=color, marker="o", 
-                            s=300, 
-                            alpha=0.7)
-            if edi > 0:
-                end_price = ev.end_price
-                end_time = ev.end_time
-                if ev.profit > 0:
-                    marker = "o"
-                else:
-                    marker = "x"
-                ax.scatter(edi, end_price, c=color, marker=marker, 
-                            s=600, 
-                            alpha=0.7)
-                
-            if st < epochs[-1] and ed > epochs[-1]:
-                end_time = epochs[-1]
-                edi = len(epochs)-1
-            if ed > epochs[0] and st < epochs[0]:
-                start_time = epochs[0]
-                sti = 0
-            if ed < epochs[0] or st > epochs[-1]:
-                continue
-            
-            slope = (end_price-start_price)/(end_time-start_time)
-            end_price = start_price + slope*(end_time - start_time)
-            ax.plot([sti, edi], [start_price, end_price], 
-                            color=color, linewidth=self.linewidth)
-            '''
-            
             
                 

@@ -91,7 +91,8 @@ def plot(instrument, granularity,
                    h[sti:sti+nbar], l[sti:sti+nbar], c[sti:sti+nbar], 
                    datetime_display_span=datetime_display_span)
         for pe in plotElements:
-            pe.plot(ax, eps)
+            if pe != None:
+                pe.plot(ax, eps)
         sti += nbar
         
     fig.autofmt_xdate()

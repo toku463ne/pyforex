@@ -30,18 +30,12 @@ class SimpleStrategy(Strategy):
                 
             self.id = self.createOrder(tickEvent.time, self.instrument, self.curr_side, 
                              env.ORDER_MARKET, 1, price, 
+                             takeprofit_price=price+self.curr_side*self.profit,
+                             stoploss_price=price-self.curr_side*self.profit,
                              desc="test")
             self.trade_start_price = price
             
-        else:
-            if self.curr_side == env.SIDE_BUY:
-                price = tickEvent.bid
-            else:
-                price = tickEvent.ask
-            if self.trade_start_price + self.profit < price or \
-                self.trade_start_price - self.profit > price:
-                self.closeTrade(self.id)
-            
+
     def onSignal(self, signalEvent):
         if self.id == signalEvent.id:
             if signalEvent.signal >= env.ESIGNAL_TRADE_CLOSED:

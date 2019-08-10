@@ -12,8 +12,15 @@ import lib
 
 
 class OandaExecutor(Executor):
+    class IDMap():
+        def __init__(self, orderID, tradeID=-1):
+            self.orderID = orderID
+            self.tradeID = tradeID
+    
     def __init__(self):
         self.oandaw = OandaWrapper()
+        self.idmaps = {}
+    
     
     def issueOrder(self, event):
         if event.order_type == env.ORDER_MARKET:
@@ -28,12 +35,16 @@ class OandaExecutor(Executor):
                               res))
             data = res["orderCreateTransaction"]
             event.order_id = data["id"]
-            event.trade_id = data["tradeID"]
-            event.first_tran_id = res["relatedTransactionIDs"][-1]
-        
-        
-    def checkOrder(self, ep, event, _, _):
-        event.status = env.ESTATUS_ORDER_CLOSED    
+    
+    # Do nothing here
+    def checkOrder(self, ep, order_event, bid=0, ask=0):
+        pass
+    
+    
+    
+    def checkTrade(self, ep, trade_event, bid=0, ask=0):
+        pass
+       
     
     
     

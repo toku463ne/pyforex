@@ -38,9 +38,10 @@ class OandaWrapper(object):
             if req == None:
                 lib.printError(lib.nowepoch(), "req is None")
             res = self.api.request(req)
+            return res
         except oandapyV20.exceptions.V20Error as err:
             lib.printError(lib.nowepoch(), "%s" % (str(err)))
-        return res    
+        return None
             
                 
     def getCurrPrice(self, instrument):

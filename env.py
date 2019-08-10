@@ -6,10 +6,11 @@ DATE_FORMAT_DEFAULT = "%Y%m%dT%H%M%S"
 DATE_FORMAT_NORMAL = "%Y-%m-%dT%H:%M:%S"
 
 
-MODE_BACKTESTING = 1
-MODE_REAL = 2
-MODE_QA = 3
-MODE_UNITTEST = 4
+MODE_BACKTESTING = 1 #Test by loading history data in advance. Fastest.
+MODE_REAL = 2 # Real
+MODE_QA = 3 # Test with real time data using test account with virtual budget
+MODE_UNITTEST = 4 # Use lab database and break the database before testing
+MODE_SIMULATE = 5 # Test with history data but getting tick data every time.
 
 LOGLEVEL_DEBUG = 1
 LOGLEVEL_INFO = 2
@@ -40,6 +41,8 @@ ESTATUS_TRADE_ONGOING = 5
 ESTATUS_TRADE_CLOSE_REQUESTED = 6
 ESTATUS_TRADE_CLOSED = 7
 ESTATUS_TRADE_CANCELLED = 8
+
+TRADING_HISTORY_FLUSH_INTERVAL = 60*60 #move history events to db every hours
 
 SIDE_BUY = 1
 SIDE_SELL = -1

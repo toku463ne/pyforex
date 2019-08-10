@@ -28,6 +28,7 @@ class OandaGetter(DataGetter):
         
         
     def getPrice(self, startep, endep):
+        errret = ([],[],[],[],[],[])
         price = self.priceToGet
         endep += 1
         candleType = ""
@@ -46,6 +47,8 @@ class OandaGetter(DataGetter):
             "to": lib.epoch2str(endep, "%Y-%m-%dT%H:%M:%SZ"),
             "datetime_format": "UNIX"})
         self.oandaw.request(req)
+        if req.response == None:
+            return errret
         cdls = req.response.get('candles')
         count = len(cdls)
         (t, o, h, l, c, v) = self.getIniPriceLists(0, count)

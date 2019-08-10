@@ -7,9 +7,9 @@ import env
 
 class TradeEvent(object):
     def __init__(self, _id, trade_id, 
-                instrument, side, units, start_price, start_time, 
+                instrument, side, units, start_price, startep, 
                 status=env.ESTATUS_TRADE_OPENED, takeprofit_price=0, stoploss_price=0,
-                end_price=-1, profit=0, end_time=0, desc=""):
+                end_price=-1, profit=0, endep=0, desc=""):
         self.type = env.EVETYPE_SIGNAL
         self.id = _id
         self.trade_id = trade_id
@@ -22,8 +22,7 @@ class TradeEvent(object):
         self.profit = profit
         self.takeprofit_price = takeprofit_price
         self.stoploss_price = stoploss_price
-        self.start_time = start_time
-        self.end_time = end_time
-        #self.completed = False
+        self.startep = startep
+        self.endep = endep
         self.desc = desc
         

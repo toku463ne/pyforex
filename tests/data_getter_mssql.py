@@ -30,8 +30,7 @@ class Test(unittest.TestCase):
         _, _, _, _, _, _ = og.getPrice(st, ed)
         self.assertEqual(d.countTable(mTable),1)
         self.assertEqual(d.countTable(pTable),37)
-        
-
+    
     def testGetH1MSSQLPrices(self):
         env.run_mode = env.MODE_UNITTEST
         from db.mssql import MSSQLDB
@@ -134,7 +133,6 @@ class Test(unittest.TestCase):
         t, o, h, l, c, v = og.getPrice(st, ed)
         self.assertEqual(d.countTable(mTable),1)
         
-
 
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testGetOandaPrice']

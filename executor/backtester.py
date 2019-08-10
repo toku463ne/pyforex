@@ -39,12 +39,13 @@ class BacktestExecutor(Executor):
                 if price*side < event.stoploss_price*side:         
                     trade_closed = True
             if event.takeprofit_price > 0:
-                if price*side > event.takeprofit_price*side:         
+                if price*side > event.takeprofit_price*side:
+                    price = event.takeprofit_price         
                     trade_closed = True
         
         if trade_closed:
             event.end_price = price
-            event.end_time = ep
+            event.endep = ep
             event.profit = (event.end_price - event.start_price) * event.units * event.side
             event.status = env.ESTATUS_TRADE_CLOSED
         

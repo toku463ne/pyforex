@@ -37,8 +37,8 @@ class DataGetter(object):
             or startep > self.ep[-1] or endep > self.ep[-1]:
             return self.getIniPriceLists(0, 0)
         
-        sti = math.floor((startep - self.ep[0])/self.unit)
-        edi = math.floor((endep - self.ep[0] - 1)/self.unit)
+        sti = math.floor((startep - self.ep[0])/self.unitsecs)
+        edi = math.floor((endep - self.ep[0] - 1)/self.unitsecs)
         return (self.ep[sti:edi+1],
                 self.o[sti:edi+1],
                 self.h[sti:edi+1],

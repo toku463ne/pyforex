@@ -256,14 +256,17 @@ class MSSQLGetter(DataGetter):
                     firstm = oldm
                 else:
                     firstm = m
+                    oldm = m
                     continue
             if firstm == None:
+                oldm = m
                 continue
             
             if startID >= 0 and mstart >= mList[mIndex[startID]][1] \
                 and firstm[2]+self.unitsecs>=mstart:
                 
                 firstm[2] = max(mend, firstm[2])
+                updates[firstm[0]] = 1
                 del self.metainf[mid]
                 deletes[mid] = 1
                 updates[mid] = 0

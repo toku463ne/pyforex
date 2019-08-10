@@ -21,7 +21,7 @@ ALTER ROLE db_owner ADD MEMBER pytrader;
 
 # Need visual c++ 14
 
-pip3 install cython pyodbc pytz pyyaml requests ujson jupyter matplotlib mpl_finance
+pip3 install cython pyodbc pymssql pytz pyyaml requests ujson jupyter matplotlib mpl_finance
 pip3 install oandapyV20 
 
 

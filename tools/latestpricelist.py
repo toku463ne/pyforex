@@ -19,7 +19,7 @@ class LatestPriceList(object):
         if price in self.priceInfo.keys():
             cnt = self.priceInfo[price].cnt + 1
         else:
-            cnt = 0
+            cnt = 1
             
         self.priceInfo[price] = PriceBox(epoch, price, obj, cnt)
         
@@ -50,7 +50,7 @@ class LatestPriceList(object):
     
     
 class PriceBox(object):
-    def __init__(self, epoch, price, obj, cnt=0):
+    def __init__(self, epoch, price, obj, cnt=1):
         self.epoch = epoch
         self.price = price
         self.obj = obj

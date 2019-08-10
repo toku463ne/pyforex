@@ -8,8 +8,10 @@ from tools.subchart import SubChart
 import lib.tradelib as tradelib
 import lib
 from plotelement.events import PlotEleEvents
-from tools.indexeddict import IndexedDict
+#from tools.indexeddict import IndexedDict
+from collections import OrderedDict
 from event.info import InfoEvent
+import env
 
 class DensityIndex(TechnicalIndex):
     class Block():
@@ -20,75 +22,67 @@ class DensityIndex(TechnicalIndex):
             self.mean = mean
             
             
-    def __init__(self, instrument, granularity, startep, endep=0, 
-                 anal_span=5, cachesize=1000):
+    def __init__(self, instrument, granularity, startep, endep=-1, 
+                 anal_span=5):
         super(DensityIndex, self).__init__(instrument, granularity)
         self.subc = SubChart(instrument, granularity, startep, 
-                             endep, anal_span, cachesize)
+                             endep, anal_span)
         self.now = -1
-        self.nowidx = 0
         self.anal_span = anal_span
+        self.pipsize = tradelib.pip2Price(1, instrument)
         self.decimalPlace = tradelib.getDecimalPlace(instrument)
-        self.densdata = IndexedDict("densdata")
-        (t, _, hl, ll, cl, _) = self.subc.getPrices()
-        self._calcDensity(anal_span, t, hl, ll, cl)
+        #self.densdata = IndexedDict("densdata")
+        self.densdata = OrderedDict()
+        self.updateDens(startep)
         
 
         
     def onTick(self, tickEvent):
-        epoch = tickEvent.time
-        errret = (-1,-1)
-        i, t = self.subc.getTime(epoch)
-        if t == self.now:
-            return errret
+        i, epoch = self.subc.onTick(tickEvent)
+        if i == -1 or epoch == self.now :
+            return 
         
-        if i < 0:
-            self.updateDensity()
-            i, t = self.subc.getTime(epoch)
-            if i < 0:
-                return errret
-        
-        if self.densdata.hasKey(t):
-            block = self.densdata.get(t)
+        if env.run_mode not in [env.MODE_BACKTESTING, env.MODE_UNITTEST]:
+            self.updateDens(self.now+self.unitsecs)
+            
+            
+        if epoch in self.densdata.keys():
+            block = self.densdata[epoch]
             self.latestPriceList.upsert(epoch, block.mean, block)
+            
+        self.now = epoch
         
-        self.now = t
-        self.nowidx= i
-        
-        return True
-        
-    def getCandle(self, i=0):
+
+
+    def getCandle(self, epoch):
+        i, _ = self.subc.getTime(epoch)
         j = self.nowidx - i
         (tl, ol, hl, ll, cl, vl) = self.subc.getPrices()
         return (tl[j],ol[j],hl[j],ll[j],cl[j],vl[j])
     
 
-    def updateDensity(self):
-        (tl, _, hl, ll, cl, _) = self.subc.getPrices()
-        start_idx = len(tl)
-        (t1, _, hl1, ll1, cl1, _) = self.subc.getLatestChart(tl[-1])
-        tl.extend(t1)
-        hl.extend(hl1)
-        ll.extend(ll1)
-        cl.extend(cl1)
-        self._calcDensity(start_idx, tl, hl, ll, cl)
+    def updateDens(self, startep=-1):
+        if startep == -1:
+            starti = -1
+        else:
+            starti, _ = self.subc.getTime(startep)
         
-        
-    def _calcDensity(self, start_idx, tl, hl, ll, cl):
         anal_span = self.anal_span
-        for i in range(start_idx, len(tl)):
-            hl_c_rate,c_mean,hl_std = tradelib.getDensity(hl[i-anal_span:i+1], 
-                                                    ll[i-anal_span:i+1], 
-                                                    cl[i-anal_span:i+1])
+        (tl, _, hl, ll, cl, _) = self.subc.getPrices()
+        for i in range(starti, len(tl)):
+            hl_c_rate,c_mean,hl_std = tradelib.getDensity(hl[i-anal_span+1:i+1], 
+                                                    ll[i-anal_span+1:i+1], 
+                                                    cl[i-anal_span+1:i+1])
             c_mean = lib.truncFromDecimalPlace(c_mean, self.decimalPlace)
-            self.densdata.append(tl[i], self.Block(tl[i],hl_c_rate,hl_std, c_mean))
+            #self.densdata.append(tl[i], self.Block(tl[i],hl_c_rate,hl_std, c_mean))
+            self.densdata[tl[i]] = self.Block(tl[i],hl_c_rate,hl_std, c_mean)
         
-    def truncateOldFrom(self, starti):
-        nshift = self.subc.truncateOldFrom(starti)
-        if nshift <= 0:
-            return
-        self.densdata.shiftKeys(nshift)
-        self.nowidx -= nshift
+        if env.run_mode not in [env.MODE_BACKTESTING, env.MODE_UNITTEST]:
+            t = tl[0]
+            for k in list(self.densdata.keys()):
+                if k >= t:
+                    break
+                del self.densdata[k]
         
         
     def data(self):
@@ -96,11 +90,35 @@ class DensityIndex(TechnicalIndex):
     
     def getPlotElement(self, color="k"):
         infoevents = []
-        for ep in self.densdata.keys:
-            block = self.densdata.get(ep)
+        for ep in self.densdata.keys():
+            block = self.densdata[ep]
             if block.density >= 0.8:
                 infoevents.append(InfoEvent(ep , block.mean,
                                 "density:\n %.3f" % block.density,
                                 color=color))
         return PlotEleEvents(infoevents)
     
+    
+    def printDens(self):
+        for ep in self.densdata.keys():
+            b = self.densdata[ep]
+            print("%s dens=%.3f mean=%.3f std=%.3f" % (lib.epoch2str(ep),
+                b.density, b.mean, b.std))
+    
+    
+    def sumNearest(self, price, rangeSize=0):
+        cnt = 0
+        max_edge = 0
+        min_edge = 0
+        for i in range(-rangeSize, rangeSize+1):
+            obj, c = self.latestPriceList.searchObj(price+i*self.pipsize)
+            if obj != None:
+                ma = obj.std + obj.mean
+                mi = obj.mean - obj.std
+                if ma > max_edge:
+                    max_edge = ma
+                if mi == 0 or mi < min_edge:
+                    min_edge = mi
+                cnt += c
+        return (cnt, min_edge, max_edge)
+            
