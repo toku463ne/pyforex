@@ -20,7 +20,9 @@ class LatestPriceList(object):
             cnt = self.priceInfo[price].cnt + 1
         else:
             cnt = 1
-            
+        
+        #if price == 108.18:
+        #    print("here")    
         self.priceInfo[price] = PriceBox(epoch, price, obj, cnt)
         
         

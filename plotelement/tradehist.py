@@ -5,7 +5,6 @@ Created on 2019/04/28
 '''
 from plotelement import PlotElement
 import lib
-
 import env
 
 class PlotEleTradeHist(PlotElement):
@@ -13,6 +12,8 @@ class PlotEleTradeHist(PlotElement):
 
     def __init__(self, eventqueue, sellcolor="r", buycolor="b",  
                  markersize=600, linewidth=1.5):
+        
+        
         self.eventqueue = eventqueue
         self.sellcolor = sellcolor
         self.buycolor = buycolor
@@ -25,8 +26,8 @@ class PlotEleTradeHist(PlotElement):
         qued = self.eventqueue.dict
         for k in qued:
             ev = qued[k]
-            st = ev.start_time
-            ed = ev.end_time
+            st = ev.startep
+            ed = ev.endep
             if st == ed:
                 continue
             if ed < epochs[0] or st > epochs[-1]:

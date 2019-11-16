@@ -104,6 +104,7 @@ class OandaWrapper(object):
 
 
 if __name__ == "__main__":
+    import time
     oandaw = OandaWrapper()
     bid, ask = oandaw.getCurrPrice("USD_JPY")
     print("current rate bid=%f ask=%f" % (bid, ask))
@@ -112,20 +113,15 @@ if __name__ == "__main__":
     #print("req=%s res=%s" % (req, res))
     
     r = oandaw.createMarketOrder("USD_JPY", 1, 
-                    ask+0.05, bid-0.05)
+                    ask+0.02, bid-0.02)
     print(r)
     
     order_id = r["orderCreateTransaction"]["id"]
     
+    while True:
+        rv = oandaw.transactionsSinceID(15)
+        print(rv)
     
-    #rv = oandaw.listOrders("test1")
-    #print(rv)
-    
-    #rv = oandaw.listTrades("test1")
-    #print(rv)
-    
-    rv = oandaw.transactionsSinceID(15)
-    print(rv)
-    
+        time.sleep(3)
 
     

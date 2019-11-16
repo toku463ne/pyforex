@@ -2,51 +2,56 @@
 from event.order import OrderEvent
 import env
 import lib
+import lib.tradelib as tradelib
+
 
 class Strategy(object):
+    # self.manager is set on trading.Trading
     
+    
+    # return list of order_events
     def onTick(self, tickEvent):
         pass
     
+    # return void
     def onSignal(self, signalEvent):
         pass
 
-
-
-
-    def _genID(self):
-        return self.tran.genID()
-            
-
-    def _run(self, event):
-        if event.type == env.EVETYPE_TICK:
-            self.onTick(event)
-        if event.type == env.EVETYPE_SIGNAL:
-            self.onSignal(event)
-
-
-    #_id, instrument, side, order_type, units, 
-    #             price, takeprofit_price=0, stoploss_price=0, valid_time, desc
-    def createOrder(self, ep, instrument, side, order_type, units, 
-                 price, validep=0, takeprofit_price=0, stoploss_price=0, desc=""):
-        _id = self._genID()
-        event = OrderEvent(_id, -1, instrument, side, order_type, units, price, 
-                ep, takeprofit_price=takeprofit_price, 
-                stoploss_price=stoploss_price,
-                validep=validep, desc=desc)
-        self.tran.addOrder(_id, event)
-        lib.printInfo(ep, "orderO id=%d %s s=%d type=%d u=%d %.3f \
-t/p=%.3f s/l=%.3f vl=%d %s" % (_id, instrument,
-                    side, order_type, units, price, takeprofit_price, 
-                    stoploss_price,
-                    validep, desc))
-        return _id
+    
+    
+    def createMarketOrder(self, tickEvent, instrument, side, units, price,
+                        validep=0, takeprofit=0, stoploss=0, desc=""):
+        return self.createOrder(env.CMD_CREATE_MARKET_ORDER,
+                          tickEvent.time, instrument, side,
+                          units, price, validep,  
+                          takeprofit, stoploss, desc)
+    
+    def createStopOrder(self, tickEvent, instrument, side, units, price,
+                        validep=0, takeprofit=0, stoploss=0, desc=""):
+        if side == env.SIDE_BUY and price >= tickEvent.ask:
+            return None
+        
+        return self.createOrder(env.CMD_CREATE_STOP_ORDER,
+                          tickEvent.time, instrument, side,
+                          units, price, validep,  
+                          takeprofit, stoploss, desc)
         
         
-    def closeTrade(self, _id):
-        event = self.tran.getTrade(_id)
-        if event != None:
-            event.status = env.ESTATUS_TRADE_CLOSE_REQUESTED
+    def createOrder(self, cmd, epoch, instrument, side, units, price,
+                        validep=0, takeprofit=0, stoploss=0, desc=""):
+        _id = self.manager.genID()
+        digit = tradelib.getDecimalPlace(instrument)
+        price = lib.truncFromDecimalPlace(price, digit)
+        takeprofit = lib.truncFromDecimalPlace(takeprofit, digit)
+        stoploss = lib.truncFromDecimalPlace(stoploss, digit)
+        return OrderEvent(_id, cmd,
+                          epoch, instrument, side,
+                          units, validep, price, 
+                          takeprofit, stoploss, desc)
+        
+    def createCancelEvent(self, _id):
+        return OrderEvent(_id, env.CMD_CANCEL)
+          
           
     def getPlotElements(self, color="k"):
         return []

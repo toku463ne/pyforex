@@ -9,6 +9,7 @@ from tools.oanda import OandaWrapper
 
 from oandapyV20.endpoints.instruments import InstrumentsCandles
 import lib
+import lib.tradelib as tradelib
 
 
 class OandaGetter(DataGetter):
@@ -23,6 +24,7 @@ class OandaGetter(DataGetter):
         self.instrument = instrument
         self.granularity = granularity
         self.priceToGet = priceToGet
+        self.unitsecs = tradelib.getUnitSecs(granularity)
         
         self.oandaw = OandaWrapper()
         
@@ -39,8 +41,6 @@ class OandaGetter(DataGetter):
         if price == "A":
             candleType = "ask"
         
-        #lib.epoch2str(startep, "%Y-%m-%dT%H:%M:%SZ")
-        (t, o, h, l, c, v) = self.getIniPriceLists(0, 0)
         req = InstrumentsCandles(instrument="USD_JPY", params={
             "granularity": self.granularity,
             "from": lib.epoch2str(startep, "%Y-%m-%dT%H:%M:%SZ"),
@@ -64,35 +64,6 @@ class OandaGetter(DataGetter):
             c[i] = float(item["c"])
     
         
-        '''
-        for req in InstrumentsCandlesFactory(instrument=self.instrument, params={
-            "granularity": self.granularity,
-            "from": lib.epoch2str(startep, "%Y-%m-%dT%H:%M:%SZ"),
-            "to": lib.epoch2str(endep, "%Y-%m-%dT%H:%M:%SZ"),
-            "datetime_format": "UNIX"}):
-            
-            self.oandaw.request(req)
-            cdls = req.response.get('candles')
-            count = len(cdls)
-            (t1, o1, h1, l1, c1, v1) = self.getIniPriceLists(0, count)
-            for i in range(count):
-                cdl = cdls[i]
-                item = cdl[candleType]
-                ti = cdl["time"].split(".")[0]
-                t1[i] = lib.str2epoch(ti, "%Y-%m-%dT%H:%M:%S")
-                v1[i] = cdl["volume"]
-                o1[i] = float(item["o"])
-                h1[i] = float(item["h"])
-                l1[i] = float(item["l"])
-                c1[i] = float(item["c"])
-            t.extend(t1)
-            v.extend(v1)
-            o.extend(o1)
-            h.extend(h1)
-            l.extend(l1)
-            c.extend(c1)
-        '''
-         
         return t, o, h, l, c, v
         
         

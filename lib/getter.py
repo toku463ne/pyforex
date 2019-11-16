@@ -46,5 +46,13 @@ def getNPrices(instrument, granularity, endep, nbars):
         dg = launchDataGetter(instrument, granularity)
     return dg.getNPrice(endep, nbars)
 
+def getCurrPrice(instrument, granularity):
+    name = lib.names.getDataGetterName(instrument, granularity)
+    if name in env.dataGetters.keys():
+        dg = env.dataGetters[name]
+    else:
+        dg = launchDataGetter(instrument, granularity)
+    return dg.getCurrPrice()
+
         
-        
+    

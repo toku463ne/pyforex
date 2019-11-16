@@ -11,127 +11,53 @@ import lib
 import lib.names as names
 
 class Test(unittest.TestCase):
-    def testGetM5MSSQLPrices(self):
+    
+    
+    
+    def testGetH1MSSQLPrices(self):
         env.run_mode = env.MODE_UNITTEST
         from db.mssql import MSSQLDB
+        msgetter.N_REQUEST_ROWS = 10
         d = MSSQLDB()
         
         instrument = "USD_JPY"
         granularity = "M5"
         pTable = names.getPriceTable(instrument, granularity)
-        mTable = names.getMetainfTable(instrument, granularity)
         d.execute("drop table if exists %s;" % pTable)
-        d.execute("drop table if exists %s;" % mTable)
         
-        msgetter.N_REQUEST_ROWS = 10
+        fmt = "%Y/%m/%d %H:%M"
         og = msgetter.MSSQLGetter(OandaGetter(instrument, granularity))
-        st = lib.str2epoch("2019/04/02 09:00", "%Y/%m/%d %H:%M")
-        ed = lib.str2epoch("2019/04/02 12:00", "%Y/%m/%d %H:%M")
-        _, _, _, _, _, _ = og.getPrice(st, ed)
-        self.assertEqual(d.countTable(mTable),1)
-        self.assertEqual(d.countTable(pTable),37)
-    
-    def testGetH1MSSQLPrices(self):
-        env.run_mode = env.MODE_UNITTEST
-        from db.mssql import MSSQLDB
-        d = MSSQLDB()
         
-        instrument = "USD_JPY"
-        granularity = "H1"
-        pTable = names.getPriceTable(instrument, granularity)
-        mTable = names.getMetainfTable(instrument, granularity)
-        d.execute("drop table if exists %s;" % pTable)
-        d.execute("drop table if exists %s;" % mTable)
+        def _verify(ststr, edstr, tcnt, rcnt, openp, vol):
+            st = lib.str2epoch(ststr, fmt)
+            ed = lib.str2epoch(edstr, fmt)
+            t, o, h, l, c, v = og.getPrice(st, ed)
+            self.assertEqual(d.countTable(pTable),tcnt)
+            self.assertEqual(t[0], st)
+            self.assertEqual(t[-1], ed)
+            self.assertEqual(len(t), rcnt)
+            self.assertEqual(v[0], vol)
+            self.assertEqual(o[0], openp)
         
-        og = msgetter.MSSQLGetter(OandaGetter(instrument, granularity))
-        st = lib.str2epoch("2019/04/02 09:00", "%Y/%m/%d %H:%M")
-        ed = lib.str2epoch("2019/04/02 12:00", "%Y/%m/%d %H:%M")
-        t, o, h, l, c, v = og.getPrice(st, ed)
-        self.assertEqual(d.countTable(mTable),1)
-        self.assertEqual(d.countTable(pTable),4)
-        self.assertEqual(t[0], 1554195600)
-        self.assertEqual(t[-1], 1554206400)
-        self.assertEqual(len(t), 4)
-        self.assertEqual(v[0], 372)
-        self.assertEqual(o[0], 111.394)
+        # 11:00 - 11:20    
+        _verify("2019/11/13 11:00", "2019/11/13 11:20", 5,5, 108.94, 39)
         
+        # 11:00 - 11:40
+        _verify("2019/11/13 11:30", "2019/11/13 11:40", 9,3, 108.963, 21)
         
-        st = lib.str2epoch("2019/04/02 15:00", "%Y/%m/%d %H:%M")
-        ed = lib.str2epoch("2019/04/02 17:00", "%Y/%m/%d %H:%M")
-        t, o, h, l, c, v = og.getPrice(st, ed)
-        self.assertEqual(d.countTable(mTable),2)
-        self.assertEqual(d.countTable(pTable),7)
-        self.assertEqual(t[0], 1554217200)
-        self.assertEqual(t[-1], 1554224400)
-        self.assertEqual(len(t), 3)
-        self.assertEqual(h[0], 111.342)
-        self.assertEqual(l[0], 111.25)
+        # 10:40 - 11:40
+        _verify("2019/11/13 10:40", "2019/11/13 10:50", 13,3, 108.906, 32)
         
-        st = lib.str2epoch("2019/04/02 07:00", "%Y/%m/%d %H:%M")
-        ed = lib.str2epoch("2019/04/02 10:00", "%Y/%m/%d %H:%M")
-        t, o, h, l, c, v = og.getPrice(st, ed)
-        self.assertEqual(d.countTable(mTable),2)
-        self.assertEqual(d.countTable(pTable),9)
-        self.assertEqual(t[0], 1554188400)
-        self.assertEqual(t[-1], 1554199200)
-        self.assertEqual(len(t), 4)
-        self.assertEqual(v[1], 301)
-        self.assertEqual(o[1], 111.372)
+        # 10:35 - 11:40
+        _verify("2019/11/13 10:35", "2019/11/13 10:55", 14,5, 108.916, 39)
         
-        st = lib.str2epoch("2019/04/02 14:00", "%Y/%m/%d %H:%M")
-        ed = lib.str2epoch("2019/04/02 15:00", "%Y/%m/%d %H:%M")
-        t, o, h, l, c, v = og.getPrice(st, ed)
-        self.assertEqual(d.countTable(mTable),2)
-        self.assertEqual(d.countTable(pTable),10)
-        self.assertEqual(t[0], 1554213600)
-        self.assertEqual(t[-1], 1554217200)
-        self.assertEqual(len(t), 2)
-        self.assertEqual(o[1], 111.302)
-        self.assertEqual(c[1], 111.33)
+        # 10:35 - 11:50
+        _verify("2019/11/13 11:30", "2019/11/13 11:50", 16,5, 108.963, 21)
+        
+        # 10:35 - 12:50
+        _verify("2019/11/13 11:30", "2019/11/13 12:50", 28,17, 108.963, 21)
         
         
-        st = lib.str2epoch("2019/04/02 17:00", "%Y/%m/%d %H:%M")
-        ed = lib.str2epoch("2019/04/02 19:00", "%Y/%m/%d %H:%M")
-        t, o, h, l, c, v = og.getPrice(st, ed)
-        self.assertEqual(d.countTable(mTable),2)
-        self.assertEqual(d.countTable(pTable),12)
-        self.assertEqual(t[0], 1554224400)
-        self.assertEqual(t[-1], 1554231600)
-        self.assertEqual(len(t), 3)
-        self.assertEqual(v[2], 255)
-        self.assertEqual(o[2], 111.386)
-        
-        
-        st = lib.str2epoch("2019/04/02 10:00", "%Y/%m/%d %H:%M")
-        ed = lib.str2epoch("2019/04/02 20:00", "%Y/%m/%d %H:%M")
-        t, o, h, l, c, v = og.getPrice(st, ed)
-        self.assertEqual(d.countTable(mTable),1)
-        self.assertEqual(d.countTable(pTable),14)
-        self.assertEqual(t[0], 1554199200)
-        self.assertEqual(t[-1], 1554235200)
-        self.assertEqual(len(t), 11)
-        self.assertEqual(o[5], 111.302)
-        self.assertEqual(c[5], 111.33)
-        
-
-        st = lib.str2epoch("2019/04/01 00:00", "%Y/%m/%d %H:%M")
-        ed = lib.str2epoch("2019/04/01 03:00", "%Y/%m/%d %H:%M")
-        t, o, h, l, c, v = og.getPrice(st, ed)
-        self.assertEqual(d.countTable(mTable),2)
-        self.assertEqual(d.countTable(pTable),18)
-        self.assertEqual(len(t), 4)
-        
-        st = lib.str2epoch("2019/04/01 03:00", "%Y/%m/%d %H:%M")
-        ed = lib.str2epoch("2019/04/01 06:00", "%Y/%m/%d %H:%M")
-        t, o, h, l, c, v = og.getPrice(st, ed)
-        self.assertEqual(d.countTable(mTable),2)
-        self.assertEqual(d.countTable(pTable),21)
-        self.assertEqual(len(t), 4)
-        
-        st = lib.str2epoch("2019/04/01 07:00", "%Y/%m/%d %H:%M")
-        ed = lib.str2epoch("2019/04/02 09:00", "%Y/%m/%d %H:%M")
-        t, o, h, l, c, v = og.getPrice(st, ed)
-        self.assertEqual(d.countTable(mTable),1)
         
 
 if __name__ == "__main__":

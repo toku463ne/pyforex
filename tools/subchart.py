@@ -32,10 +32,11 @@ class SubChart(object):
         
         if startep == -1:
             startep = lib.nowepoch()
+            startep = startep - (startep % self.unitsecs) - self.unitsecs
         if endep == -1:
             endep = lib.nowepoch()
         (t,o,h,l,c,v) = getterlib.getPrices(instrument, 
-                                            granularity, startep, endep+1)
+                                            granularity, startep, endep)
         if nbars > 0:
             (t1,o1,h1,l1,c1,v1) = getterlib.getNPrices(instrument, 
                                                        granularity, startep-1, nbars)
@@ -85,6 +86,7 @@ class SubChart(object):
             lib.printError(self.now, "%s | self.now=%d self.nowidx=%d len(t)=%d starti=%d" % \
                            (self.name, self.now, self.nowidx, len(t), starti)
                            )
+            raise IndexError
 
     def onTick(self, tickEvent):
         epoch = tickEvent.time
@@ -123,6 +125,7 @@ class SubChart(object):
         if epoch == -1:
             epoch = lib.nowepoch()
             
+        #epoch = epoch - (epoch % self.unitsecs) - self.unitsecs
         epoch = epoch - (epoch % self.unitsecs)
         if epoch == self.now:
             return self.epochsidx[epoch], epoch

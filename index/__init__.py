@@ -2,7 +2,6 @@
 import lib.tradelib as tradelib
 import lib
 import math
-from tools.latestpricelist import LatestPriceList
 
 class TechnicalIndex(object):
     
@@ -11,8 +10,6 @@ class TechnicalIndex(object):
         self.instrument = instrument
         self.granularity = granularity
         self.unitsecs = tradelib.getUnitSecs(granularity)
-        self.latestPriceList = LatestPriceList(self.unitsecs*cache_len, 
-                                               instrument)
         
     def onTick(self, tickEvent):
         pass
@@ -22,11 +19,4 @@ class TechnicalIndex(object):
     
     def getPlotElements(self, color="k"):
         return []
-    
-    def searchNearest(self, price):
-        return self.latestPriceList.searchNearest(price)
-    
-    
-    def searchObj(self, price):
-        return self.latestPriceList.searchObj(price)
     

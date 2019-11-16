@@ -6,6 +6,7 @@ Created on 2019/04/13
 
 from ticker import Ticker
 from event.tick import TickEvent
+import env
 
 NORMAL_SPREAD = 0.4
 MAX_SPREAD = 10
@@ -24,6 +25,7 @@ class BackTestTicker(Ticker):
         self.prices = getterlib.getPrices(instrument, granularity, startep, endep)
         self.pos = 0
         self.now = -1 
+        self.ticker_type = env.TICKTYPE_OFFLINE
         self.spread_price = tradelib.pip2Price(spread, instrument)
         
     def tick(self):

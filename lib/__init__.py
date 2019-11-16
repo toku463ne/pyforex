@@ -34,8 +34,9 @@ def log(msg):
     print(msg)
     
 def epoch2dt(epoch):
-    d = datetime.datetime(*time.gmtime(epoch)[:6])
-    d = pytz.utc.localize(d)
+    #d = datetime.datetime(*time.gmtime(epoch)[:6])
+    d = datetime.datetime.utcfromtimestamp(epoch)
+    #d = pytz.utc.localize(d)
     return d
 
 def dt2epoch(gmdt):
@@ -56,11 +57,11 @@ def epoch2str(epoch, format=env.DATE_FORMAT_NORMAL):
     return dt2str(epoch2dt(epoch), format)
 
 def nowepoch():
-    return dt2epoch(datetime.datetime.now())
+    return time.time()
 
-def list2str(list, sep=",", enquote=False):
+def list2str(list1, sep=",", enquote=False):
     s = ""
-    for v in list:
+    for v in list1:
         if enquote:
             v = "'%s'" % str(v)
         if s == "":

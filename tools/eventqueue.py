@@ -22,10 +22,15 @@ class EventQueue(object):
         self.dict[_id] = obj
         return True
     
-    def getlast(self):
+    def getLast(self):
         if len(self.list) == 0:
             return (-1, None)
         _id = self.list[-1]
+        obj = self.dict[_id]
+        return (_id, obj)
+    
+    def getFirst(self):
+        _id = self.list[0]
         obj = self.dict[_id]
         return (_id, obj)
     

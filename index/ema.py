@@ -9,9 +9,9 @@ from plotelement.linechart import PlotEleLineChart
 
 class EmaIndex(TechnicalIndex):
     
-    def __init__(self, instrument, granularity, startep, endep, ema_span=5):
+    def __init__(self, instrument, granularity, startep, endep, ema_span=20):
         super(EmaIndex, self).__init__(instrument, granularity)
-        self.subc = SubChart(instrument, granularity, startep, 
+        self.subc = SubChart("EmaIndex", instrument, granularity, startep, 
                              endep)
         (t, _, _, _, cl, _) = self.subc.getPrices()
         self.epochs = t[ema_span:]

@@ -23,6 +23,9 @@ def getTransactionSequence(transaction_name):
 def getDataGetterName(instrument, granularity):
     return "%s_%s" %  (instrument, granularity)
 
+def getOandaTrandactionIDTableName():
+    return "oanda_transaction_id"
+
 def getDBKey():
     if env.run_mode == env.MODE_UNITTEST:
         dbkey = "testdatabase"
