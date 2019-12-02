@@ -48,29 +48,6 @@ def getNearEpoch(period, ep):
     return math.floor(ep - ep % u)
     
 
-
-def getDensity(hl, ll, cl):
-    if len(ll) != len(hl) or len(ll) != len(cl):
-        return (False, -1)
-    hn = np.array(hl)
-    ln = np.array(ll)
-    vl = copy.deepcopy(cl)
-    vl.extend(hl)
-    vl.extend(ll)
-    vn = np.array(vl)
-    vm = vn.mean()
-    hln = (hn-ln)
-    hls = hln.std()
-    vns = vn.std()
-    if vns == 0:
-        return 1,vm,hls
-    else:
-        if (cl[-1]-vm)/vns > 1:
-            return -1, -1,-1
-        hl_vn_rate = hls/vns
-        dens = 1- abs(1-hl_vn_rate)
-        return dens,vm,hls
-
 def getNearestRoundN(price, instrument="USD_JPY"):
     if instrument == "USD_JPY" or \
         instrument == "GBP_JPY":

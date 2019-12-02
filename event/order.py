@@ -5,7 +5,7 @@ Created on 2019/04/20
 '''
 
 import env
-import lib
+import lib.tradelib as tradelib
 
 class OrderEvent(object):
     def __init__(self, _id, cmd, epoch=0, instrument="", side=0, 
@@ -15,37 +15,41 @@ class OrderEvent(object):
         self.epoch = epoch
         self.type = env.EVETYPE_ORDER
         self.instrument = instrument
+        digit = tradelib.getDecimalPlace(instrument)
+        self.digit = digit
         self.side = side
         self.cmd = cmd
         if cmd != env.CMD_CANCEL and _id < 0:
             raise Exception("Need id for cancel orders!")
         self.units = units
         self.validep = validep
-        self.price = price
+        self.price = round(price,digit+1)
         self.status = env.ESTATUS_NONE
-        self.takeprofit_price = takeprofit
-        self.stoploss_price = stoploss
+        self.takeprofit_price = round(takeprofit,digit+1)
+        self.stoploss_price = round(stoploss,digit+1)
         self.desc = desc
         
         self.order_close_time = 0
         
         # trade part
-        self.trade_start_time = 0
+        self.trade_open_time = 0
         self.trade_close_time = 0
-        self.trade_start_price = 0
+        self.trade_open_price = 0
         self.trade_close_price = 0
         self.trade_profit = 0
         
-    def start_trade(self, tickEvent, price, desc=""):
+    def open_trade(self, tickEvent, price, desc=""):
         self.status = env.ESTATUS_TRADE_OPENED
-        self.trade_start_time = tickEvent.time
-        self.trade_start_price = price
+        self.trade_open_time = tickEvent.time
+        self.trade_open_price = round(price,self.digit+1)
         self.desc = desc
         
     def close_trade(self, tickEvent, price, desc=""):
         self.status = env.ESTATUS_TRADE_CLOSED
-        self.trade_end_time = tickEvent.time
-        self.trade_end_price = price
+        self.trade_close_time = tickEvent.time
+        self.trade_close_price = round(price,self.digit+1)
+        price = (self.trade_close_price-self.trade_open_price)*self.side
+        self.trade_profit = round(price,self.digit+1)*self.units
         self.desc = desc
         
     def close_order(self, tickEvent, desc=""):
@@ -53,8 +57,9 @@ class OrderEvent(object):
         self.order_close_time = tickEvent.time
         self.desc = desc
         
-    def check_valid(self, tickEvent):
+    def is_valid(self, tickEvent):
         if tickEvent.time > self.validep:
-            self.close_order("Exceeded valid time=%s" % lib.epoch2str(self.validep))
-
+            return False
+            #self.close_order("Exceeded valid time=%s" % lib.epoch2str(self.validep))
+        return True
     

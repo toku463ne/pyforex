@@ -21,31 +21,55 @@ class TradeManager(object):
         else:
             return False
         
-    def openOrder(self, orderEvent):
+    def openOrder(self, tickEvent, orderEvent):
         _id = orderEvent.id
         if not _id in self.orders.keys():
+            orderEvent.epoch = tickEvent.time
+            orderEvent.status = env.ESTATUS_ORDER_OPENED
             self.orders[_id] = orderEvent
-            lib.log("[%s] %s Order %d opened. %f side=%d tp=%f sl=%f" % (
+            if orderEvent.validep == 0:
+                validstr = ""
+            else:
+                validstr = "valid=%s" % lib.epoch2str(orderEvent.validep)
+            lib.printMsg(orderEvent.epoch, "[%s] Order %d opened. %f side=%d tp=%f sl=%f %s" % (
                         self.name,
-                        lib.epoch2str(orderEvent.epoch),
                         _id, 
                         orderEvent.price, orderEvent.side,
                         orderEvent.takeprofit_price, 
-                        orderEvent.stoploss_price))
+                        orderEvent.stoploss_price,
+                        validstr
+                        ))
         else:
             raise Exception("Order %d already open." % _id)
     
-    def closeOrder(self, orderEvent, epoch):
-        _id = orderEvent.id
-        if _id in self.orders.keys():
-            self.history.append(self.orders[_id])
-            del self.orders[_id]
-            lib.log("[%s] %s Order %d closed. %f side=%d profit=%f %s" % (
+    def openTrade(self, tickEvent, orderEvent, price, desc=""):
+        orderEvent.open_trade(tickEvent, price, desc)
+        self.updateOrder(orderEvent)
+        lib.printMsg(tickEvent.time, "[%s] Trade %d opened. %f" % (
                         self.name,
-                        lib.epoch2str(epoch),
+                        orderEvent.id, 
+                        price))
+        
+    def closeOrder(self, tickEvent, orderEvent, desc=""):
+        _id = orderEvent.id
+        orderEvent.close_order(tickEvent, desc)
+        if _id in self.orders.keys():
+            self.history.append(orderEvent)
+            del self.orders[_id]
+            lib.printMsg(tickEvent.time, "[%s] Order %d closed. %s" % (
+                        self.name,
                         _id, 
-                        orderEvent.trade_end_price, 
-                        orderEvent.side, orderEvent.trade_profit, 
+                        orderEvent.desc))
+    
+    def closeTrade(self, tickEvent, orderEvent, price, desc=""):
+        orderEvent.close_trade(tickEvent, price, desc)
+        self.history.append(orderEvent)
+        del self.orders[orderEvent.id]
+        lib.printMsg(tickEvent.time, "[%s] Trade %d closed. %f profit=%f %s" % (
+                        self.name,
+                        orderEvent.id, 
+                        orderEvent.trade_close_price, 
+                        orderEvent.trade_profit, 
                         orderEvent.desc))
     
     def flushHistory(self):
@@ -71,4 +95,11 @@ class TradeManager(object):
     def popTransaction(self):
         return self.transactions.pop(0)
     
-    
+    def issueError(self, tickEvent, orderEvent):
+        _id = orderEvent.id
+        orderEvent.close_order(tickEvent, orderEvent.desc)
+        lib.printMsg(tickEvent.time, "[%s] Order %d error. %f %s" % (
+                        self.name,
+                        orderEvent.id, 
+                        orderEvent.price,
+                        orderEvent.desc))

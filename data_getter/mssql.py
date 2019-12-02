@@ -32,6 +32,9 @@ class MSSQLGetter(DataGetter):
                  ep[i],
                  lib.epoch2str(ep[i],env.DATE_FORMAT_NORMAL2),
                  o[i],h[i],l[i],c[i],v[i])
+            if i >= N_REQUEST_ROWS and i % N_REQUEST_ROWS == 0:
+                self.db.execute(sql)
+                sql = ""
         self.db.execute(sql)
         
         
@@ -65,6 +68,7 @@ class MSSQLGetter(DataGetter):
             return (-1, -1)
         return (mi, ma)
         
+    '''
     def _getPriceFromChild(self, startep, endep):
         (ep,o,h,l,c,v) = self.childDG.getPrice(startep, endep)
         if len(ep) == 0:
@@ -83,7 +87,43 @@ class MSSQLGetter(DataGetter):
                 len(ep)
             ))
         return (ep,o,h,l,c,v)
-        
+    '''
+   
+    def _getPriceFromChild(self, startep, endep):
+        interval_secs = self.unitsecs * N_REQUEST_ROWS
+        (ep,o,h,l,c,v) = ([],[],[],[],[],[])
+        baseep = startep
+        while True:
+            lastep = min(endep,baseep+interval_secs)
+            (ep1,o1,h1,l1,c1,v1) = self.childDG.getPrice(baseep, lastep)
+            ep.extend(ep1)
+            o.extend(o1)
+            h.extend(h1)
+            l.extend(l1)
+            c.extend(c1)
+            v.extend(v1)
+            if lastep >= endep:
+                break;
+            baseep += interval_secs + self.unitsecs
+            
+        if len(ep) == 0:
+            return ([],[],[],[],[],[])
+        try:
+            self.insertData(ep, o, h, l, c, v)
+        except Exception as e:
+            sqlstate = e.args[0]
+            if sqlstate == '23000':
+                lib.printInfo(ep[0], str(e))
+            else:
+                raise e
+        lib.log("Data from child. %s - %s - %d rows" % (
+                lib.epoch2str(startep, env.DATE_FORMAT_NORMAL), 
+                lib.epoch2str(endep, env.DATE_FORMAT_NORMAL),
+                len(ep)
+            ))
+        return (ep,o,h,l,c,v)
+    
+    '''
     def getPrice(self, startep, endep):
         interval_secs = self.unitsecs * N_REQUEST_ROWS
         (ep,o,h,l,c,v) = ([],[],[],[],[],[])
@@ -101,8 +141,9 @@ class MSSQLGetter(DataGetter):
                 break;
             baseep += interval_secs + self.unitsecs
         return (ep,o,h,l,c,v)
+    '''
     
-    def _getPriceProc(self, startep, endep):
+    def getPrice(self, startep, endep):
         startep = tradelib.getNearEpoch(self.granularity, startep)
         endep = tradelib.getNearEpoch(self.granularity, endep)
         

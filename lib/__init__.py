@@ -10,7 +10,7 @@ import inspect
 import yaml
 import env
 import copy
-
+import numpy as np
 
 def printDebug(ep, msg):
     if env.loglevel <= env.LOGLEVEL_DEBUG:
@@ -25,7 +25,14 @@ def printError(ep, msg):
         printMsg(ep, "ERROR | %s" % msg)
 
 def printMsg(ep, msg):
-    print("%s | %s" % (epoch2str(ep, env.DATE_FORMAT_NORMAL), msg))
+    timestr = ""
+    if env.run_mode in [env.MODE_BACKTESTING, 
+                        env.MODE_UNITTEST,
+                        env.MODE_SIMULATE]:
+        timestr = epoch2str(ep, env.DATE_FORMAT_NORMAL)
+    else:
+        timestr = epoch2str(nowepoch(), env.DATE_FORMAT_NORMAL)
+    print("%s %s" % (timestr, msg))
    
 def log(msg):
     now = datetime.datetime.now()
@@ -98,6 +105,22 @@ def getRateList(n_blocks, n_digits):
 
 def truncFromDecimalPlace(f, d):
     return math.floor(f*(10**d))/(10**d)
+
+def calcNormStd(vallist, span, analspan):
+    sl = []
+    totallen = len(vallist)
+    if totallen - span < analspan:
+        return []
+    for i in range(span-1, totallen):
+        sl.append(np.array(vallist[i-span+1:i+1]).std())
+    
+    ns = []
+    for i in range(analspan-1, totallen-span):
+        sn = np.array(sl[i-analspan+1:i+1])
+        ss = sn.std()
+        sm = sn.mean()
+        ns.append(abs((sl[i]-sm)/(3*ss)))
+    return ns
 
 
 if __name__ == "__main__":

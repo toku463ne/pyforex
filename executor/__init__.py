@@ -1,6 +1,8 @@
 import env
 import lib
 from event.signal import SignalEvent
+from lib import epoch2str
+
 
 class Executor(object):
     # self.manager is set on trading.Trading
@@ -17,17 +19,10 @@ class Executor(object):
         orders = self.manager.getOrders()
         for _id in orders.keys():
             orderEvent = orders[_id]
-            self.checkOrder(tickEvent, orderEvent)
-            if orderEvent.status in [env.ESTATUS_ORDER_CLOSED,
-                                     env.ESTATUS_TRADE_OPENED,
-                                     env.ESTATUS_TRADE_CLOSED]:
+            if self.checkOrderChange(tickEvent, orderEvent):
                 signal_events.append(SignalEvent(_id, 
                                         orderEvent.status))
-            if orderEvent.status in [env.ESTATUS_ORDER_CLOSED,
-                                 env.ESTATUS_TRADE_CLOSED]:
-                self.manager.closeOrder(orderEvent, tickEvent.time)
-                
-            
+
             
         # operate new orders
         while len(self.manager.transactions) > 0:
@@ -37,7 +32,7 @@ class Executor(object):
             
             if orderEvent.cmd == env.CMD_CANCEL:
                 self.cancelOrder(tickEvent, orgEvent)
-                self.manager.closeOrder(orgEvent, tickEvent.time)
+                self.manager.closeOrder(orgEvent, tickEvent, "canceled")
                 signal_events.append(SignalEvent(_id, 
                                         orgEvent.status))
                 continue
@@ -49,17 +44,18 @@ class Executor(object):
                              env.CMD_CREATE_LIMIT_ORDER,
                              env.CMD_CREATE_MARKET_ORDER]:
                 self.issueOrder(tickEvent, orderEvent)
-                self.manager.openOrder(orderEvent)
+                self.manager.openOrder(tickEvent, orderEvent)
+                signal_events.append(SignalEvent(_id, orderEvent.status))
+    
+            if orderEvent.cmd == env.CMD_ISSUE_ERROR:
+                self.manager.issueError(tickEvent, orderEvent)
                 signal_events.append(SignalEvent(_id, orderEvent.status))
     
         return signal_events
         
-    # must override
     def issueOrder(self, tickEvent, orderEvent):
-        orderEvent.status = env.ESTATUS_ORDER_OPENED
-        self.manager.updateOrder(orderEvent)
+        pass
     
-    # must override
     def cancelOrder(self, tickEvent, orderEvent):
         if orderEvent.side == env.SIDE_BUY:
             price = tickEvent.bid
@@ -72,40 +68,69 @@ class Executor(object):
             orderEvent.close_trade(tickEvent, price, "Trade cancel")
     
     # make sure to update orderEvent status accordingly
-    def checkOrder(self, tickEvent, orderEvent):
+    # True is status has changed
+    def checkOrderChange(self, tickEvent, orderEvent):
         if orderEvent.side == env.SIDE_BUY:
             price = tickEvent.ask
         else:
             price = tickEvent.bid
         
         side = orderEvent.side
-    
+        h = tickEvent.h
+        l = tickEvent.l
+        ret = False
         
         if orderEvent.status == env.ESTATUS_ORDER_OPENED:
             if orderEvent.cmd == env.CMD_CREATE_MARKET_ORDER:
-                orderEvent.start_trade(tickEvent, price, "Market order")
-                self.manager.updateOrder(orderEvent)
+                self.manager.openTrade(tickEvent, orderEvent, price, "Market order")
+                ret = True
                 
             elif orderEvent.cmd == env.CMD_CREATE_STOP_ORDER:
-                orderEvent.check_valid(tickEvent)
-                if price*side < orderEvent.price*side:
-                    orderEvent.start_trade(tickEvent, price, 
-                                           "Stop order filled")
-                    self.manager.updateOrder(orderEvent)
-                    
+                
+                if orderEvent.is_valid(tickEvent) == False:
+                    self.manager.closeOrder(tickEvent, orderEvent, "expired")
+                    ret = True
+                else:
+                    if side == env.SIDE_BUY and orderEvent.price > l:
+                        self.manager.openTrade(tickEvent, orderEvent, price, "Stop order")
+                        ret = True
+                    if side == env.SIDE_SELL and orderEvent.price < h:
+                        self.manager.openTrade(tickEvent, orderEvent, price, "Stop order")
+                        ret = True
+  
             else:
                 raise Exception("Non supported cmd")
         
         elif orderEvent.status == env.ESTATUS_TRADE_OPENED:
             tp = orderEvent.takeprofit_price
             sl = orderEvent.stoploss_price
+            spread = abs(tickEvent.bid - tickEvent.ask)
+            iswin = 0
             
-            if price*side >= tp*side:
-                orderEvent.close_trade(tickEvent, price, "takeprofit")
-                self.manager.updateOrder(orderEvent)
+            if side == env.SIDE_BUY:
+                if l < sl:
+                    iswin = -1
+                    price = sl - spread
+                elif h > tp:
+                    iswin = 1
+                    price = tp
+            if side == env.SIDE_SELL:
+                if h > sl:
+                    iswin = -1
+                    price = sl + spread
+                elif l < tp:
+                    iswin = 1
+                    price = tp
             
-            if price*side <= sl*side:
-                orderEvent.close_trade(tickEvent, price, "stoploss")
-                self.manager.updateOrder(orderEvent)
+            price = round(price, tickEvent.digit+1)
             
+            if iswin == 1:
+                self.manager.closeTrade(tickEvent, orderEvent, price, "takeprofit")
+                ret = True
+            
+            if iswin == -1:
+                self.manager.closeTrade(tickEvent, orderEvent, price, "stoploss")
+                ret = True
+            
+        return ret
             

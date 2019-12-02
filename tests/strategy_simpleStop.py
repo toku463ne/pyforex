@@ -6,10 +6,10 @@ Created on 2019/11/16
 import unittest
 import lib.testdata as testdata
 from lib.backtests import runTestingBacktest
-from strategy.simpleMarket import SimpleMarketStrategy
+from strategy.simpleStop import SimpleStopStrategy
 import lib
 
-class TestSimpleMarketStrategy(unittest.TestCase):
+class TestSimpleStopStrategy(unittest.TestCase):
 
 
     def testCase1(self):
@@ -22,8 +22,8 @@ class TestSimpleMarketStrategy(unittest.TestCase):
                                  100.0, st, ed, 3)
         testdata.makeSmallPeriodData(instrument, granularity, "M1")
         
-        strategy = SimpleMarketStrategy(instrument,granularity, 5)
-        history = runTestingBacktest("c1", instrument, 
+        strategy = SimpleStopStrategy(instrument, granularity, 5)
+        history = runTestingBacktest("c2", instrument, 
                        st, ed, strategy)
         
         res = history[0]
@@ -31,22 +31,24 @@ class TestSimpleMarketStrategy(unittest.TestCase):
         self.assertEqual(res.epoch, 
                          lib.str2epoch("2019-11-15T00:02:00"), "order start")
         self.assertEqual(res.trade_open_time, 
-                         lib.str2epoch("2019-11-15T00:03:00"), "trade start")
+                         lib.str2epoch("2019-11-15T00:04:00"), "trade start")
         self.assertEqual(res.trade_close_time, 
-                         lib.str2epoch("2019-11-15T00:09:00"), "trade close")
-        self.assertEqual(res.trade_profit, -0.054, "profit")
+                         lib.str2epoch("2019-11-15T00:10:00"), "trade close")
+        self.assertEqual(res.trade_profit, 0.047, "profit")
         
         res = history[1]
         self.assertEqual(res.id, 2, "id")
         self.assertEqual(res.epoch, 
                          lib.str2epoch("2019-11-15T00:11:00"), "order start")
+        self.assertEqual(res.order_close_time, 
+                         lib.str2epoch("2019-11-15T00:16:00"), "order close")
         
-        res = history[6]
-        self.assertEqual(res.id, 7, "id")
+        res = history[5]
+        self.assertEqual(res.id, 6, "id")
         self.assertEqual(res.epoch, 
-                         lib.str2epoch("2019-11-15T00:41:00"), "order start")
+                         lib.str2epoch("2019-11-15T00:46:00"), "order start")
         self.assertEqual(res.trade_close_time, 
-                         lib.str2epoch("2019-11-15T00:57:00"), "trade close")
+                         lib.str2epoch("2019-11-15T00:59:00"), "trade close")
         #print(history)
 
 if __name__ == "__main__":

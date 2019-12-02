@@ -23,10 +23,13 @@ V = 5
 class BackTestTicker(Ticker):
     def __init__(self, instrument, granularity, startep, endep, spread=NORMAL_SPREAD):
         self.prices = getterlib.getPrices(instrument, granularity, startep, endep)
-        self.pos = 0
-        self.now = -1 
         self.ticker_type = env.TICKTYPE_OFFLINE
         self.spread_price = tradelib.pip2Price(spread, instrument)
+        self.digit = tradelib.getDecimalPlace(instrument)
+        self.spread_price = round(self.spread_price, self.digit+1)
+        self.pos = 0
+        self.now = -1 
+        
         
     def tick(self):
         self.pos += 1
@@ -51,8 +54,10 @@ class BackTestTicker(Ticker):
         price = (h+l+c)/3
         self.now = t
         if updated:
-            return TickEvent(t, price-self.spread_price/2, 
-                             price+self.spread_price/2, o=o, h=h, l=l, c=c)
+            return TickEvent(t, round(price-self.spread_price/2, self.digit+1), 
+                             round(price+self.spread_price/2, self.digit+1), 
+                             self.digit,
+                             o=o, h=h, l=l, c=c)
         else:
             return None
     

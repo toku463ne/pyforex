@@ -16,7 +16,7 @@ class SubChartTest(unittest.TestCase):
         env.run_mode = env.MODE_SIMULATE
         st = lib.str2epoch("2019/04/02 09:00", "%Y/%m/%d %H:%M")
         ed = lib.str2epoch("2019/04/02 12:00", "%Y/%m/%d %H:%M")
-        s = SubChart("USD_JPY", "M5", st, ed, 5, 48)
+        s = SubChart("testNormal", "USD_JPY", "M5", st, ed, 5, 48)
         u = s.unitsecs
         
         (t,_,_,_,_,_) = s.getPrices()
@@ -76,7 +76,7 @@ class SubChartTest(unittest.TestCase):
     def testWeekends(self):
         st = lib.str2epoch("2019/04/05 20:00", "%Y/%m/%d %H:%M")
         ed = lib.str2epoch("2019/04/08 01:00", "%Y/%m/%d %H:%M")
-        s = SubChart("USD_JPY", "H1", st, ed, 5)
+        s = SubChart("testWeekends", "USD_JPY", "H1", st, ed, 5)
         u = s.unitsecs
         
         i, now = s.getTime(st + 100)

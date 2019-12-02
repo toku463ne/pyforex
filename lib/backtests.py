@@ -4,8 +4,6 @@ Created on 2019/04/22
 @author: kot
 '''
 import lib.tradelib as tradelib
-import env
-import lib
 
 def runTestingBacktest(name, instrument, 
                        startep, endep, strategy, tick_period="M1"):

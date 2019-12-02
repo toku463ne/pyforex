@@ -20,10 +20,17 @@ class CandleShape(object):
         patdict = {}
         
         i = 0
-        for dr in [DR_UP, DR_DW, DR_NO]:
-            for pat in patterns:
-                patdict[(dr,)+pat] = i
-                i += 1
+        for pat in patterns:
+            patdict[pat] = i
+            i += 1
+        #for dr in [DR_UP, DR_DW, DR_NO]:
+        #    for pat in patterns:
+        #        if dr != DR_NO and pat[1] > 0:
+        #            patdict[(dr,)+pat] = i
+        #            i += 1
+        #        if dr == DR_NO and pat[1] == 0:
+        #            patdict[(dr,)+pat] = i
+        #            i += 1
         self.patdict = patdict
         rpatdict = {}
         for k in patdict.keys():
@@ -38,7 +45,7 @@ class CandleShape(object):
             return ((-1,-1,-1,-1),-1)
         uhige = (h-max(o,c))/size
         dhige = (min(o,c)-l)/size
-        jittai = abs(c-o)
+        #jittai = abs(c-o)
         #d = jittai/(1/self.unit_size)
         d = 0
         is_up = (c-o-d > 0)
@@ -55,9 +62,9 @@ class CandleShape(object):
         dhige = int(us*dhige)
         jittai2 = us - (uhige+dhige)
         
-        shape = (dr, dhige, jittai2, uhige)
+        shape = (dhige, jittai2, uhige)
         n = self.patdict[shape]
-        return (shape, n)
+        return (dr, shape, n)
         
         
     def plot(self):
@@ -71,16 +78,16 @@ class CandleShape(object):
         
         fig = plt.figure()
         ax = fig.add_subplot(1,1,1)
-        mpl_finance.candlestick2_ohlc(ax, opens=o, closes=c,lows=[0]*nrows, 
-                                      highs=[1/self.unit_size]*nrows,
-                          width=0.8, colorup='lightgray', colordown='grey', alpha=1)
+        mpl_finance.candlestick_ohlc(ax, [o, [1/self.unit_size]*nrows,
+                                          [0]*nrows, c],
+                          width=0.8, colorup='lightgray', 
+                          colordown='grey')
     
+        plt.savefig('C:\\Windows\\Temp\\test.png')
     
 if __name__ == "__main__":
     cs = CandleShape()
-    
-        
-        
+    cs.plot()
         
        
         
