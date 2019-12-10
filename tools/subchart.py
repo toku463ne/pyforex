@@ -19,10 +19,11 @@ V = 5
 class SubChart(object):
     def __init__(self, name, instrument, granularity, 
                  startep=-1, endep=-1, 
-                 nbars=0, maxsize=12*24*3):
+                 nbars=0, maxsize=12*24*3, truncateOld=True):
         self.name = name
         self.instrument = instrument
         self.granularity = granularity
+        self.truncateOld = truncateOld
         self.unitsecs = tradelib.getUnitSecs(granularity)
         self.epochsidx = None
         self.nowidx = -1
@@ -65,6 +66,8 @@ class SubChart(object):
         
     # returns number of shift
     def truncateOldFrom(self):
+        if self.truncateOld == False:
+            return -1
         try:
             if env.run_mode in [env.MODE_BACKTESTING, env.MODE_UNITTEST]:
                 return
@@ -105,11 +108,12 @@ class SubChart(object):
         return self.now
         
             
-    def getPrices(self, startep=-1, endep=-1):
+    def getPrices(self, startep=-1, endep=-1, nbars=0):
         starti = 0
         endi = -1
         if startep > 0:
             starti, startep = self.getTime(startep)
+            starti = max(0, starti-nbars)
         if starti == -1:
             starti = 0
         if endep > 0:
@@ -160,12 +164,20 @@ class SubChart(object):
                 c[starti:endi+1],
                 v[starti:endi+1])
     
+    def getBarDiff(self, epoch1, epoch2):
+        i1, _ = self.getTime(epoch1)
+        i2, _ = self.getTime(epoch2)
+        return max(i2-i1, 0)
+    
     def getBeforeNPrice(self, epoch, nbars):
         i, _ = self.getTime(epoch)
-        j = i - nbars
+        j = max(0, i - nbars)
         (t,o,h,l,c,v) = self.prices
         return (t[j],o[j],h[j],l[j],c[j],v[j])
     
+    def getBeforeNt(self, epoch, nbars):
+        (t,_,_,_,_,_) = self.getBeforeNPrice(epoch, nbars)
+        return t
     
     
     def getNow(self):
@@ -174,7 +186,11 @@ class SubChart(object):
             
             
     def getPrice(self, i=0):
-        j = self.nowidx
+        #j = self.nowidx - i
+        if i == 0:
+            j = self.nowidx
+        else:
+            j = i
         if j < 0:
             return (-1,-1,-1,-1,-1,-1)
         (t,o,h,l,c,v) = self.prices
@@ -202,7 +218,7 @@ class SubChart(object):
             (t1,o1,h1,l1,c1,v1) = getterlib.getPrices(self.instrument, 
                             self.granularity, t[-1]+self.unitsecs, epoch)
             if len(t1) == 0:
-                return (t[-1], len(t)-1)
+                return (len(t)-1, t[-1])
             shiftt = len(t)
             for i in range(len(t1)):
                 self.epochsidx[t1[i]] = i+shiftt

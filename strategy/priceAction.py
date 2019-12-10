@@ -83,8 +83,6 @@ class PriceActionStrategy(Strategy):
                             statistics_span=analspan)
         self.unitsecs = tradelib.getUnitSecs(granularity)
         self.pipprice = tradelib.pip2Price(1, instrument)
-        self.up_trendstatus = {}
-        self.dn_trendstatus = {}
         self.nowi = -1
         self.now = -1
         

@@ -6,11 +6,11 @@ import math
 class TechnicalIndex(object):
     
     
-    def __init__(self, name, instrument, granularity):
+    def __init__(self, name, subChart):
         self.name = name
-        self.instrument = instrument
-        self.granularity = granularity
-        self.unitsecs = tradelib.getUnitSecs(granularity)
+        self.instrument = subChart.instrument
+        self.granularity = subChart.granularity
+        self.unitsecs = tradelib.getUnitSecs(self.granularity)
         self.now = -1
         
         

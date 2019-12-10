@@ -6,15 +6,17 @@ Created on 2019/11/30
 from collections import OrderedDict
 
 class History(object):
-    def __init__(self, size):
+    def __init__(self, size, deleteOld=True):
         self.history = OrderedDict()
         self.size = size
+        self.deleteOld = deleteOld
     
     def append(self, epoch, obj):
         self.history[epoch] = obj
         
-        if len(self.history) > self.size:
-            del self.history[self.history.keys()[0]]
+        if self.deleteOld:
+            if len(self.history) > self.size:
+                del self.history[self.history.keys()[0]]
     
     def last(self):
         keys = list(self.history.keys())
